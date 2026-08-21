@@ -286,13 +286,13 @@
     </div>
     <div class="dados" id="resumoFinal"></div>
     <div class="btns">
-      <button class="bt-sec" style="flex:1" onclick="baixarPDF()">Baixar termo de liberação</button>
+      <button class="bt-prim" onclick="baixarNFAssinada()">Baixar NF com canhoto assinado</button>
     </div>
-    <div class="btns" id="btnsNFAssinada">
-      <button class="bt-sec" style="flex:1" onclick="baixarNFAssinada()">Baixar NF com canhoto assinado</button>
+    <div class="btns oculto" id="btnsDrive">
+      <button class="bt-sec" style="flex:1" onclick="abrirNoDrive()">Abrir no Google Drive</button>
     </div>
     <div class="btns">
-      <button class="bt-prim" onclick="location.reload()">Nova liberação</button>
+      <button class="bt-sec" style="flex:1" onclick="location.reload()">Nova liberação</button>
     </div>
   </section>
 
@@ -315,7 +315,7 @@ const RESPONSAVEIS = ["Carolina Santos","Íris Cristina","Thiago Kiska","Mauríc
 const st = {
   responsavel: '', nfUpload: null, nfBytesB64: '', etiquetas: [], analise: null,
   tipoLiberacao: '', justificativa: '', transportadoraConfere: '', transportadoraColeta: '',
-  motoNome: '', motoRG: '', assinatura: '', selfie: '', pdfBase64: '', pdfCanhotoBase64: '', dataHora: ''
+  motoNome: '', motoRG: '', assinatura: '', selfie: '', pdfBase64: '', pdfCanhotoBase64: '', linkPdfCanhoto: '', dataHora: ''
 };
 let etapaAtual = 1;
 
@@ -748,13 +748,16 @@ async function finalizar(){
       pdfBase64: st.pdfBase64,
       consentimentoLGPD: true
     });
+    st.linkPdfCanhoto = r.linkPdfCanhoto || '';
+    document.getElementById('btnsDrive').classList.toggle('oculto', !st.linkPdfCanhoto);
     document.getElementById('resumoFinal').innerHTML =
       `<b>NF:</b> ${escapar(st.analise.nf.numero||'—')}<br>
        <b>Tipo de liberação:</b> ${escapar(st.tipoLiberacao)}<br>
        <b>Responsável pela liberação:</b> ${escapar(nomeResponsavel())}<br>
        <b>Retirado por:</b> ${escapar(st.motoNome)} — RG ${escapar(st.motoRG)}<br>
        <b>Data e hora:</b> ${escapar(st.dataHora)}` +
-      (r.linkPdf ? `<br><b>PDF no Drive:</b> <a href="${r.linkPdf}" target="_blank" rel="noopener">abrir</a>` : '');
+      (r.linkPdfCanhoto ? `<br><b>NF assinada no Drive:</b> <a href="${r.linkPdfCanhoto}" target="_blank" rel="noopener">abrir</a>` : '') +
+      (r.linkPdf ? `<br><b>Termo de liberação no Drive:</b> <a href="${r.linkPdf}" target="_blank" rel="noopener">abrir</a>` : '');
     exibirEtapa(10);
   }catch(err){
     exibirEtapa(8);
@@ -843,19 +846,43 @@ function gerarPDF(){
   return doc.output('datauristring').split(',')[1];
 }
 
-function baixarNFAssinada(){
-  if (!st.pdfCanhotoBase64){ mostrarErro('A NF assinada nao foi gerada neste registro.'); return; }
+/**
+ * Baixa um PDF a partir do base64.
+ * Usa Blob + createObjectURL em vez de data: URI, porque navegadores de
+ * celular bloqueiam ou ignoram downloads de data: URI grandes.
+ * No iOS, se o navegador ignorar o atributo download, o PDF abre no
+ * visualizador e o usuario pode salvar/compartilhar de la.
+ */
+function baixarPdfBase64(base64, nomeArquivo){
+  const blob = new Blob([b64ParaBytes(base64)], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = 'data:application/pdf;base64,' + st.pdfCanhotoBase64;
-  a.download = 'NF' + (st.analise?.nf?.numero || '') + '_assinada.pdf';
+  a.href = url;
+  a.download = nomeArquivo;
+  a.rel = 'noopener';
+  a.target = '_blank';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-function baixarPDF(){
-  const a = document.createElement('a');
-  a.href = 'data:application/pdf;base64,' + st.pdfBase64;
-  a.download = 'liberacao_NF' + (st.analise?.nf?.numero || '') + '.pdf';
-  a.click();
+function baixarNFAssinada(){
+  limparErro();
+  if (!st.pdfCanhotoBase64){
+    mostrarErro('A NF assinada nao foi gerada neste registro. Use o botao "Abrir no Google Drive".');
+    return;
+  }
+  try{
+    baixarPdfBase64(st.pdfCanhotoBase64,
+      'NF' + ((st.analise && st.analise.nf && st.analise.nf.numero) || '') + '_assinada.pdf');
+  }catch(e){
+    mostrarErro('Nao foi possivel baixar aqui. Use o botao "Abrir no Google Drive".');
+  }
+}
+
+function abrirNoDrive(){
+  if (st.linkPdfCanhoto) window.open(st.linkPdfCanhoto, '_blank', 'noopener');
 }
 
 /* ============ ESTAMPA DO CANHOTO NA NF ============
