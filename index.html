@@ -683,6 +683,11 @@ function mesmoNomeJS(a,b){
 /** Decide a qual NF (índice) cada etiqueta pertence. Retorna
  *  { atribuicoes: [nfIndex|null,...], ambiguas: [etiquetaIndex,...] }.
  *  Respeita st.overridesManuais[etiquetaIndex] = nfIndex | 'nenhuma'. */
+/** Código "base" sem o sufixo "-N" (ex.: "ST42215-2" -> "ST42215"), usado
+ *  como segunda tentativa de casamento quando a foto da etiqueta não capturou
+ *  o sufixo com nitidez (falha comum de OCR). */
+function codigoBase(c){ return String(c || '').replace(/-\d+$/, ''); }
+
 function calcularAtribuicoes(){
   const nfs = st.loteAnalise.nfs, etiquetas = st.loteAnalise.etiquetas;
   const atribuicoes = new Array(etiquetas.length).fill(null);
@@ -695,8 +700,15 @@ function calcularAtribuicoes(){
     }
     const codigos = et.codigosST || [];
     if (!codigos.length){ ambiguas.push(i); return; }
-    const candidatos = [];
+    let candidatos = [];
     nfs.forEach((nf, j) => { if (codigos.some(c => (nf.codigosST||[]).indexOf(c) >= 0)) candidatos.push(j); });
+    if (!candidatos.length){
+      // segunda tentativa: ignora o sufixo "-N" (código lido sem nitidez)
+      const basesEtq = codigos.map(codigoBase);
+      nfs.forEach((nf, j) => {
+        if ((nf.codigosST||[]).some(c => basesEtq.indexOf(codigoBase(c)) >= 0)) candidatos.push(j);
+      });
+    }
     if (candidatos.length === 1) atribuicoes[i] = candidatos[0];
     else ambiguas.push(i);
   });
@@ -766,7 +778,7 @@ function renderResultadoLote(){
   resumo.className = 'resumo ' + (qtdOk === resultadosNF.length ? 'ok' : 'div');
   resumo.innerHTML = `<b>${resultadosNF.length} nota(s) fiscal(is) analisada(s):</b> ` +
     `${qtdOk} sem divergência, ${resultadosNF.length - qtdOk} com divergência.` +
-    (ambiguas.length ? `<br>${ambiguas.length} foto(s) de etiqueta não puderam ser associadas automaticamente a uma NF — veja abaixo.` : '');
+    (ambiguas.length ? `<br>${ambiguas.length} foto(s) de etiqueta não puderam ser associadas automaticamente a uma NF — resolva abaixo para poder continuar.` : '');
 
   const boxAmb = document.getElementById('etiquetasAmbiguas');
   if (!ambiguas.length){
@@ -835,7 +847,7 @@ function renderResultadoLote(){
     </div>`;
   }).join('');
 
-  atualizarBotaoContinuarLote(resultadosNF);
+  atualizarBotaoContinuarLote(resultadosNF, ambiguas);
 }
 
 function atribuirEtiquetaManual(indiceEtiqueta, valor){
@@ -867,10 +879,16 @@ function desfazerDecisaoNF(j){
   renderResultadoLote();
 }
 
-function atualizarBotaoContinuarLote(resultadosNF){
+function atualizarBotaoContinuarLote(resultadosNF, ambiguas){
   const todasDecididas = resultadosNF.every((r,j) => !!st.decisoesNF[j]);
   const algumaAprovada = resultadosNF.some((r,j) => st.decisoesNF[j] && st.decisoesNF[j].tipo !== 'Reprovada');
-  document.getElementById('btContinuarLote').disabled = !(todasDecididas && algumaAprovada);
+  // Enquanto houver foto de etiqueta sem atribuição (nem automática, nem manual),
+  // não deixa continuar — senão a foto fica capturada mas nunca chega a entrar
+  // em nenhuma nota fiscal, sem que ninguém perceba.
+  const semEtiquetaPendente = !ambiguas || ambiguas.length === 0;
+  const btn = document.getElementById('btContinuarLote');
+  btn.disabled = !(todasDecididas && algumaAprovada && semEtiquetaPendente);
+  btn.title = semEtiquetaPendente ? '' : 'Atribua (ou marque como "não pertence a esta coleta") todas as etiquetas destacadas acima antes de continuar.';
 }
 
 function continuarParaColeta(){
@@ -1044,10 +1062,16 @@ let proximoIdxFinalizar = 0; // permite retomar de onde parou se uma tentativa f
 
 async function finalizar(){
   limparErro();
+  if (canvasVazio()){ mostrarErro('A assinatura é obrigatória.'); return; }
   if (!document.getElementById('lgpd').checked){
     mostrarErro('É necessário registrar o consentimento do responsável pela coleta.'); return;
   }
   if (!st.cnhBase64){ mostrarErro('Fotografe a CNH do motorista.'); return; }
+
+  // captura a assinatura do quadro (antes ficava só dentro de validarEtapa('7'),
+  // que só rodava se houvesse uma navegação de etapa depois da assinatura —
+  // e agora o botão "Concluir liberação" chama finalizar() diretamente).
+  st.assinatura = document.getElementById('assinatura').toDataURL('image/png').split(',')[1];
 
   if (!st.dataHora) st.dataHora = new Date().toLocaleString('pt-BR');
   exibirEtapa('9');
