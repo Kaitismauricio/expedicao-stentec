@@ -87,6 +87,13 @@
   .thumb img{width:100%;height:100%;object-fit:cover;}
   .thumb button{position:absolute;top:2px;right:2px;width:22px;height:22px;padding:0;border-radius:50%;
                 background:rgba(0,0,0,.62);color:#fff;font-size:14px;line-height:1;font-weight:400;}
+  .thumb.nf{width:auto;height:auto;overflow:visible;display:flex;align-items:center;gap:8px;
+            padding:9px 34px 9px 12px;font-size:.86rem;}
+  .thumb.nf button{position:absolute;top:50%;transform:translateY(-50%);}
+  #etiquetasAmbiguas .thumb{width:150px;height:auto;overflow:visible;padding-bottom:8px;}
+  #etiquetasAmbiguas .thumb img{height:100px;object-fit:cover;border-radius:7px 7px 0 0;}
+  #etiquetasAmbiguas .thumb select{width:calc(100% - 16px);margin:0 8px;padding:6px;font-size:.82rem;
+            border:1px solid var(--borda);border-radius:6px;}
   /* resultado */
   .check{display:flex;gap:11px;padding:13px 0;border-bottom:1px solid #eef1f3;}
   .check:last-child{border-bottom:none;}
@@ -156,7 +163,7 @@
 
   <!-- 1. RESPONSÁVEL -->
   <section class="card etapa" data-etapa="1">
-    <div class="passo">Etapa 1 de 8</div>
+    <div class="passo">Etapa 1 de 7</div>
     <h1>Responsável pela liberação</h1>
     <p class="desc">Quem está conduzindo o processo de liberação do material?</p>
     <div class="opcoes" id="opcoesResp"></div>
@@ -167,18 +174,20 @@
     <div class="btns"><button class="bt-prim" onclick="irPara(2)">Continuar</button></div>
   </section>
 
-  <!-- 2. NOTA FISCAL -->
+  <!-- 2. NOTAS FISCAIS -->
   <section class="card etapa oculto" data-etapa="2">
-    <div class="passo" id="passoNF">Nota fiscal</div>
-    <h1 id="tituloNF">Nota fiscal da expedição</h1>
-    <p class="desc" id="descNF">Informe o PDF desta nota fiscal. Você pode liberar até 6 notas fiscais na mesma coleta.</p>
+    <div class="passo">Notas fiscais</div>
+    <h1>Notas fiscais da coleta</h1>
+    <p class="desc">Selecione de uma vez os PDFs de todas as notas fiscais desta coleta (até 6).</p>
 
-    <div class="hint">No celular ou tablet, toque abaixo e escolha o PDF pelo app do Google Drive,
-      Arquivos ou Downloads. A NF enviada também fica arquivada na pasta de notas fiscais do Drive.</div>
+    <div class="hint">No celular ou tablet, toque abaixo e escolha os PDFs pelo app do Google Drive,
+      Arquivos ou Downloads — dá pra selecionar vários arquivos de uma vez. As NFs enviadas também
+      ficam arquivadas na pasta de notas fiscais do Drive.</div>
     <label class="drop" id="dropNF">
-      <span id="dropNFTxt">Toque para escolher o PDF da nota fiscal</span>
-      <input type="file" id="inputNF" accept="application/pdf,.pdf">
+      <span id="dropNFTxt">Toque para escolher os PDFs das notas fiscais</span>
+      <input type="file" id="inputNF" accept="application/pdf,.pdf" multiple>
     </label>
+    <div class="thumbs" id="listaNFs"></div>
     <div class="btns">
       <button class="bt-sec" onclick="irPara(1)">Voltar</button>
       <button class="bt-prim" onclick="irPara(3)">Continuar</button>
@@ -187,9 +196,9 @@
 
   <!-- 3. ETIQUETAS -->
   <section class="card etapa oculto" data-etapa="3">
-    <div class="passo" id="passoEtq">Etiquetas</div>
+    <div class="passo">Etiquetas</div>
     <h1>Etiquetas dos materiais</h1>
-    <p class="desc">Fotografe as etiquetas dos itens que estão sendo liberados desta nota fiscal. Até 5 fotos.</p>
+    <p class="desc">Fotografe de uma vez as etiquetas de todos os itens de todas as notas fiscais desta coleta. Não precisa separar por nota — o sistema identifica sozinho de qual NF é cada etiqueta pelo código ST.</p>
     <div class="hint">Enquadre a etiqueta de frente, sem reflexo e com o código ST bem legível.</div>
     <label class="drop" id="dropEtq">
       <span id="dropTxt">Toque para tirar foto ou escolher arquivos</span>
@@ -198,7 +207,7 @@
     <div class="thumbs" id="thumbs"></div>
     <div class="btns">
       <button class="bt-sec" onclick="irPara(2)">Voltar</button>
-      <button class="bt-prim" onclick="analisar()">Analisar</button>
+      <button class="bt-prim" onclick="analisarLote()">Analisar tudo</button>
     </div>
   </section>
 
@@ -206,36 +215,19 @@
   <section class="card etapa oculto" data-etapa="4">
     <div id="analisando" class="carregando">
       <div class="spin"></div>
-      <b>Conferindo nota fiscal e etiquetas…</b>
-      <p class="desc" style="margin-top:8px">A leitura leva de 20 a 60 segundos. Não feche esta página.</p>
+      <b>Conferindo notas fiscais e etiquetas…</b>
+      <p class="desc" style="margin-top:8px">A leitura leva cerca de 20 a 60 segundos por nota fiscal. Não feche esta página.</p>
     </div>
     <div id="resultado" class="oculto">
-      <div class="passo" id="passoResultado">Resultado da conferência</div>
+      <div class="passo">Resultado da conferência</div>
       <h1>Resultado da conferência</h1>
-      <div id="resumo" class="resumo"></div>
-      <div id="checks"></div>
-      <div id="dadosNF" class="dados"></div>
-      <div id="boxJustificativa" class="oculto">
-        <label class="campo">Justificativa da liberação condicional <span style="color:var(--erro)">*</span></label>
-        <div class="hint">Descreva o motivo de liberar mesmo com divergência. Este texto fica registrado na planilha.</div>
-        <textarea id="justificativa" placeholder="Ex.: item ST42215 sem etiqueta física, conferido manualmente com o estoque."></textarea>
+      <div id="resumoLote" class="resumo"></div>
+      <div id="etiquetasAmbiguas" class="oculto"></div>
+      <div id="cardsNFs"></div>
+      <div class="btns">
+        <button class="bt-sec" onclick="irPara(3)">Voltar</button>
+        <button class="bt-ok" id="btContinuarLote" onclick="continuarParaColeta()" disabled>Continuar e assinar</button>
       </div>
-      <div class="btns" id="btnsResultado"></div>
-    </div>
-  </section>
-
-  <!-- 4b. CONTINUAR O LOTE DE NOTAS FISCAIS -->
-  <section class="card etapa oculto" data-etapa="4b">
-    <div class="passo">Lote de notas fiscais</div>
-    <h1>Notas fiscais desta coleta</h1>
-    <p class="desc">Você pode liberar até 6 notas fiscais na mesma coleta, com uma única assinatura e foto no final.</p>
-    <div class="loteLista" id="loteLista"></div>
-    <div class="hint" id="loteVazioHint">Nenhuma nota fiscal aprovada ainda.</div>
-    <div class="btns">
-      <button class="bt-prim" id="btAdicionarNF" onclick="adicionarOutraNF()">Adicionar outra nota fiscal</button>
-    </div>
-    <div class="btns">
-      <button class="bt-ok" id="btConcluirNotas" onclick="concluirNotas()" disabled>Concluir notas e continuar</button>
     </div>
   </section>
 
@@ -438,7 +430,7 @@ function escolherTipo(tipo){
 <script>
 /* ============ CONFIGURAÇÃO ============ */
 // Cole aqui a URL /exec do Apps Script publicado como App da Web.
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbye_cvqQEWJ78oF5a75S1BInDvr5t46TY495QQ_GUx6Ef2_NOwhyGkelcLPhWm1RlpMWA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6Tj_LYO-aXgeunQued0zxJR5DOuJQEttbz7wCuttLO60JqhfRSYLYwBwydhIrxjOZ9Q/exec";
 
 // Logo da Stentec embutido, usado no cabeçalho do PDF gerado.
 const LOGO_B64 = "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";
@@ -447,16 +439,23 @@ const APP_VERSAO = '3.0';
 
 const RESPONSAVEIS = ["Carolina Santos","Íris Cristina","Thiago Kiska","Maurício Selmikaitis"];
 const MAX_NFS_LOTE = 6;
+const MAX_ETIQUETAS_LOTE = 40;
 
 /* ============ ESTADO ============
- * st.lote acumula as notas fiscais já aprovadas (liberadas normal ou
- * condicionalmente) desta coleta — até 6. Os campos soltos abaixo
- * (nfUpload, etiquetas, analise, tipoLiberacao, justificativa) são o
- * "rascunho" da nota fiscal sendo processada no momento; ao ser aprovada,
- * viram um item de st.lote e são limpos para a próxima nota. */
+ * Todas as notas fiscais e todas as fotos de etiqueta da coleta são
+ * enviadas juntas, numa única conferência. st.nfsPendentes e
+ * st.etiquetasPendentes guardam o que foi selecionado nas etapas 2 e 3;
+ * st.loteAnalise guarda o retorno "cru" do backend (dados lidos de cada
+ * NF e de cada etiqueta, sem cruzamento); a atribuição de qual etiqueta
+ * pertence a qual NF é feita aqui no navegador (por código ST em comum),
+ * com ajuste manual quando ambíguo. st.decisoesNF guarda, por NF, a
+ * decisão (Normal/Condicional/Reprovada). st.lote é montado a partir
+ * dessas decisões e usado por todo o restante do fluxo (assinatura,
+ * geração de PDF, finalizar), igual a antes. */
 const st = {
-  responsavel: '', nfUpload: null, nfBytesB64: '', etiquetas: [], analise: null,
-  tipoLiberacao: '', justificativa: '',
+  responsavel: '',
+  nfsPendentes: [], etiquetasPendentes: [],
+  loteAnalise: null, overridesManuais: {}, decisoesNF: {},
   lote: [], loteId: '',
   transportadoraConfere: '', transportadoraColeta: '',
   motoNome: '', motoCPF: '', motoRegistro: '', motoCategoria: '', cnhBase64: '', assinatura: '', dataHora: ''
@@ -471,7 +470,7 @@ function mostrarErro(msg){
 }
 function limparErro(){ document.getElementById('erro').style.display = 'none'; }
 
-const ORDEM_ETAPAS = ['1','2','3','4','4b','5','6','7'];
+const ORDEM_ETAPAS = ['1','2','3','4','5','6','7'];
 
 function exibirEtapa(n){
   n = String(n);
@@ -481,24 +480,7 @@ function exibirEtapa(n){
   const idx = ORDEM_ETAPAS.indexOf(n);
   const pct = idx >= 0 ? (idx+1)/ORDEM_ETAPAS.length*100 : 100;
   document.getElementById('progresso').style.width = pct + '%';
-  atualizarTextosNF();
   window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function atualizarTextosNF(){
-  const n = st.lote.length + 1;
-  const passoNF = document.getElementById('passoNF');
-  const tituloNF = document.getElementById('tituloNF');
-  const descNF = document.getElementById('descNF');
-  const passoEtq = document.getElementById('passoEtq');
-  const passoResultado = document.getElementById('passoResultado');
-  if (passoNF) passoNF.textContent = 'Nota fiscal ' + n + ' de até ' + MAX_NFS_LOTE;
-  if (tituloNF) tituloNF.textContent = st.lote.length ? 'Próxima nota fiscal' : 'Nota fiscal da expedição';
-  if (descNF) descNF.textContent = st.lote.length
-    ? 'Informe o PDF da nota fiscal seguinte desta coleta.'
-    : 'Informe o PDF desta nota fiscal. Você pode liberar até 6 notas fiscais na mesma coleta.';
-  if (passoEtq) passoEtq.textContent = 'Etiquetas da nota fiscal ' + n;
-  if (passoResultado) passoResultado.textContent = 'Resultado da conferência — nota fiscal ' + n;
 }
 
 function irPara(n){
@@ -523,11 +505,11 @@ function validarEtapa(n){
     return true;
   }
   if (n === '2'){
-    if (!st.nfUpload){ mostrarErro('Escolha o arquivo PDF da nota fiscal.'); return false; }
+    if (!st.nfsPendentes.length){ mostrarErro('Escolha o PDF de ao menos uma nota fiscal.'); return false; }
     return true;
   }
   if (n === '3'){
-    if (!st.etiquetas.length){ mostrarErro('Envie ao menos uma foto de etiqueta.'); return false; }
+    if (!st.etiquetasPendentes.length){ mostrarErro('Envie ao menos uma foto de etiqueta.'); return false; }
     return true;
   }
   if (n === '5'){
@@ -585,21 +567,24 @@ function nomeResponsavel(){
   }));
 })();
 
-/* ============ ETAPA 2 — NOTA FISCAL ============ */
+/* ============ ETAPA 2 — NOTAS FISCAIS (todas de uma vez) ============ */
 document.getElementById('inputNF').addEventListener('change', async (ev) => {
   limparErro();
-  const f = ev.target.files[0];
-  if (!f) return;
-  if (f.type && f.type.indexOf('pdf') < 0 && !/\.pdf$/i.test(f.name)){
-    mostrarErro('O arquivo da nota fiscal precisa ser um PDF.');
-    ev.target.value = ''; return;
+  const arquivos = Array.from(ev.target.files || []);
+  for (const f of arquivos){
+    if (st.nfsPendentes.length >= MAX_NFS_LOTE){
+      mostrarErro('Limite de ' + MAX_NFS_LOTE + ' notas fiscais por coleta.'); break;
+    }
+    if (f.type && f.type.indexOf('pdf') < 0 && !/\.pdf$/i.test(f.name)){
+      mostrarErro('O arquivo "' + f.name + '" não é um PDF e foi ignorado.'); continue;
+    }
+    try{
+      const b64 = await arquivoParaBase64(f);
+      st.nfsPendentes.push({ nome: f.name, base64: b64 });
+    }catch(e){ mostrarErro('Não foi possível ler o PDF "' + f.name + '": ' + e.message); }
   }
-  try{
-    const b64 = await arquivoParaBase64(f);
-    st.nfUpload = { nome: f.name, base64: b64 };
-    document.getElementById('dropNF').classList.add('has-file');
-    document.getElementById('dropNFTxt').textContent = f.name;
-  }catch(e){ mostrarErro('Não foi possível ler o PDF: ' + e.message); }
+  ev.target.value = '';
+  renderListaNFs();
 });
 
 function arquivoParaBase64(file){
@@ -611,15 +596,28 @@ function arquivoParaBase64(file){
   });
 }
 
-/* ============ ETAPA 3 — ETIQUETAS ============ */
+function renderListaNFs(){
+  const box = document.getElementById('listaNFs');
+  box.innerHTML = st.nfsPendentes.map((f,i) =>
+    `<div class="thumb nf"><span>${escapar(f.nome)}</span>
+     <button onclick="removerNF(${i})" title="Remover">&times;</button></div>`).join('');
+  document.getElementById('dropNFTxt').textContent = st.nfsPendentes.length
+    ? `${st.nfsPendentes.length} de até ${MAX_NFS_LOTE} nota(s) fiscal(is) — toque para adicionar mais`
+    : 'Toque para escolher os PDFs das notas fiscais';
+}
+function removerNF(i){ st.nfsPendentes.splice(i,1); renderListaNFs(); }
+
+/* ============ ETAPA 3 — ETIQUETAS (todas de uma vez) ============ */
 document.getElementById('inputEtq').addEventListener('change', async (ev) => {
   limparErro();
   const arquivos = Array.from(ev.target.files || []);
   for (const f of arquivos){
-    if (st.etiquetas.length >= 5){ mostrarErro('Máximo de 5 fotos de etiqueta.'); break; }
+    if (st.etiquetasPendentes.length >= MAX_ETIQUETAS_LOTE){
+      mostrarErro('Máximo de ' + MAX_ETIQUETAS_LOTE + ' fotos de etiqueta por coleta.'); break;
+    }
     try{
       const base64 = await comprimirImagem(f, 1600, 0.85);
-      st.etiquetas.push({nome:f.name, mime:'image/jpeg', base64});
+      st.etiquetasPendentes.push({nome:f.name, mime:'image/jpeg', base64});
     }catch(e){ mostrarErro('Não foi possível processar a imagem: ' + f.name); }
   }
   ev.target.value = '';
@@ -628,153 +626,269 @@ document.getElementById('inputEtq').addEventListener('change', async (ev) => {
 
 function renderThumbs(){
   const box = document.getElementById('thumbs');
-  box.innerHTML = st.etiquetas.map((e,i) =>
+  box.innerHTML = st.etiquetasPendentes.map((e,i) =>
     `<div class="thumb"><img src="data:image/jpeg;base64,${e.base64}">
      <button onclick="removerEtiqueta(${i})" title="Remover">&times;</button></div>`).join('');
-  document.getElementById('dropTxt').textContent = st.etiquetas.length
-    ? `${st.etiquetas.length} de 5 foto(s) — toque para adicionar mais`
+  document.getElementById('dropTxt').textContent = st.etiquetasPendentes.length
+    ? `${st.etiquetasPendentes.length} foto(s) — toque para adicionar mais`
     : 'Toque para tirar foto ou escolher arquivos';
 }
-function removerEtiqueta(i){ st.etiquetas.splice(i,1); renderThumbs(); }
+function removerEtiqueta(i){ st.etiquetasPendentes.splice(i,1); renderThumbs(); }
 
-/* ============ ETAPA 4 — ANÁLISE ============ */
-async function analisar(){
+/* ============ ETAPA 4 — ANÁLISE ÚNICA DO LOTE ============
+ * Envia todas as NFs e todas as fotos de etiqueta de uma vez. O backend
+ * só faz a leitura (OCR) de cada arquivo — o cruzamento de qual etiqueta
+ * pertence a qual NF (pelo código ST em comum) é feito aqui no navegador,
+ * para permitir recalcular na hora quando o usuário ajusta manualmente
+ * uma etiqueta ambígua, sem precisar reenviar fotos para o servidor. */
+async function analisarLote(){
   limparErro();
   if (!validarEtapa('3')) return;
   exibirEtapa('4');
   document.getElementById('analisando').classList.remove('oculto');
   document.getElementById('resultado').classList.add('oculto');
   try{
-    st.nfBytesB64 = st.nfUpload.base64;
     const r = await chamar({
-      action: 'analisar',
-      nfBase64: st.nfUpload.base64,
-      nfNome: st.nfUpload.nome,
-      etiquetas: st.etiquetas
+      action: 'analisarLote',
+      nfs: st.nfsPendentes.map(f => ({ base64: f.base64, nome: f.nome })),
+      etiquetas: st.etiquetasPendentes
     });
-    st.analise = r;
-    renderResultado(r);
+    st.loteAnalise = r;
+    st.overridesManuais = {};
+    st.decisoesNF = {};
+    renderResultadoLote();
   }catch(err){
     exibirEtapa('3');
     mostrarErro('Falha na análise: ' + err.message);
   }
 }
 
-function renderResultado(r){
+/* ---------- cruzamento etiqueta -> NF pelo código ST em comum ---------- */
+function diferencaJS(a,b){ return (a||[]).filter(x => (b||[]).indexOf(x) < 0); }
+
+function normalizarNomeJS(s){
+  s = (s||'').toString().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return s.toUpperCase().replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+}
+const PALAVRAS_IGNORADAS_JS = ['LTDA','SA','S','A','EIRELI','ME','EPP','IND','INDUSTRIA','COM',
+  'COMERCIO','DO','DA','DE','DOS','DAS','E','BRASIL','CIA','MEI'];
+function mesmoNomeJS(a,b){
+  const tok = s => normalizarNomeJS(s).split(' ').filter(t => t.length >= 4 && PALAVRAS_IGNORADAS_JS.indexOf(t) < 0);
+  const ta = tok(a), tb = tok(b);
+  if (!ta.length || !tb.length) return null;
+  for (const x of ta) for (const y of tb) if (x === y || x.indexOf(y) === 0 || y.indexOf(x) === 0) return true;
+  return false;
+}
+
+/** Decide a qual NF (índice) cada etiqueta pertence. Retorna
+ *  { atribuicoes: [nfIndex|null,...], ambiguas: [etiquetaIndex,...] }.
+ *  Respeita st.overridesManuais[etiquetaIndex] = nfIndex | 'nenhuma'. */
+function calcularAtribuicoes(){
+  const nfs = st.loteAnalise.nfs, etiquetas = st.loteAnalise.etiquetas;
+  const atribuicoes = new Array(etiquetas.length).fill(null);
+  const ambiguas = [];
+  etiquetas.forEach((et, i) => {
+    if (Object.prototype.hasOwnProperty.call(st.overridesManuais, i)){
+      const v = st.overridesManuais[i];
+      atribuicoes[i] = (v === 'nenhuma') ? null : v;
+      return;
+    }
+    const codigos = et.codigosST || [];
+    if (!codigos.length){ ambiguas.push(i); return; }
+    const candidatos = [];
+    nfs.forEach((nf, j) => { if (codigos.some(c => (nf.codigosST||[]).indexOf(c) >= 0)) candidatos.push(j); });
+    if (candidatos.length === 1) atribuicoes[i] = candidatos[0];
+    else ambiguas.push(i);
+  });
+  return { atribuicoes, ambiguas };
+}
+
+/** Monta, para cada NF, o mesmo formato de "analise" que o restante do
+ *  app já espera (nf, etiquetas, faltando, sobrando, diferencaUnidades,
+ *  checks, tudoOk), a partir das etiquetas atribuídas a ela. */
+function calcularResultadosNF(atribuicoes){
+  const nfs = st.loteAnalise.nfs, etiquetas = st.loteAnalise.etiquetas;
+  return nfs.map((nf, j) => {
+    const idxEtq = atribuicoes.map((a,i) => a === j ? i : -1).filter(i => i >= 0);
+    const etqDoNF = idxEtq.map(i => etiquetas[i]);
+    const codigosEtiquetas = [...new Set(etqDoNF.flatMap(e => e.codigosST || []))];
+    const clienteEtq = (etqDoNF.map(e => e.cliente).find(Boolean)) || '';
+    const faltando = diferencaJS(nf.codigosST, codigosEtiquetas);
+    const sobrando = diferencaJS(codigosEtiquetas, nf.codigosST);
+
+    const checks = [];
+    const nfIlegivel = !(nf.codigosST||[]).length;
+    checks.push({ chave:'nfLegivel', titulo:'Leitura da nota fiscal', ok: !nfIlegivel,
+      detalhe: nfIlegivel ? 'Não foi possível ler nenhum código ST nesta NF.' : 'NF lida com ' + nf.codigosST.length + ' código(s) ST.' });
+    const etqIlegivel = !codigosEtiquetas.length;
+    checks.push({ chave:'etiquetasLegiveis', titulo:'Leitura das etiquetas', ok: !etqIlegivel,
+      detalhe: etqIlegivel ? 'Nenhuma etiqueta foi associada a esta NF ainda.' : 'Etiquetas lidas com ' + codigosEtiquetas.length + ' código(s) ST.' });
+    const clienteIgual = mesmoNomeJS(clienteEtq, nf.cliente);
+    checks.push({ chave:'cliente', titulo:'Cliente', ok: clienteIgual === true, indefinido: clienteIgual === null,
+      detalhe: clienteIgual === null
+        ? 'Não foi possível comparar (não li o cliente na NF e/ou na etiqueta). Confira manualmente.'
+        : 'NF: ' + (nf.cliente || '—') + '  |  Etiqueta: ' + (clienteEtq || '—') });
+    const codigosOk = (faltando.length === 0 && sobrando.length === 0 && !nfIlegivel && !etqIlegivel);
+    let detalheCod = 'NF: ' + (nf.codigosST.join(', ') || '—') + '  |  Etiquetas: ' + (codigosEtiquetas.join(', ') || '—');
+    if (faltando.length) detalheCod += '  •  Sem etiqueta: ' + faltando.join(', ');
+    if (sobrando.length) detalheCod += '  •  Etiqueta sem correspondência na NF: ' + sobrando.join(', ');
+    checks.push({ chave:'codigosST', titulo:'Códigos ST', ok: codigosOk, detalhe: detalheCod });
+    const difUnidades = nf.codigosST.length - codigosEtiquetas.length;
+    checks.push({ chave:'quantidade', titulo:'Quantidade de itens',
+      ok: (difUnidades === 0 && !nfIlegivel && !etqIlegivel),
+      detalhe: 'NF: ' + nf.codigosST.length + ' item(ns)  |  Etiquetas: ' + codigosEtiquetas.length +
+               ' item(ns)  |  Diferença: ' + Math.abs(difUnidades) + ' unidade(s)' });
+
+    const tudoOk = checks.every(c => c.ok);
+    return {
+      nf, etiquetasIndices: idxEtq,
+      etiquetas: { quantidadeFotos: idxEtq.length, cliente: clienteEtq, codigosST: codigosEtiquetas },
+      faltando, sobrando, diferencaUnidades: difUnidades, checks, tudoOk
+    };
+  });
+}
+
+function renderResultadoLote(){
   document.getElementById('analisando').classList.add('oculto');
   document.getElementById('resultado').classList.remove('oculto');
 
-  document.getElementById('checks').innerHTML = r.checks.map(c => {
-    const cls = c.ok ? 'ok' : (c.indefinido ? 'ind' : 'nao');
-    const sim = c.ok ? '&#10003;' : (c.indefinido ? '?' : '&times;');
-    return `<div class="check"><div class="ic ${cls}">${sim}</div>
-            <div><b>${c.titulo}</b><span>${escapar(c.detalhe)}</span></div></div>`;
+  const { atribuicoes, ambiguas } = calcularAtribuicoes();
+  const resultadosNF = calcularResultadosNF(atribuicoes);
+
+  // decisão automática: NF ok e ainda sem decisão manual -> Normal
+  resultadosNF.forEach((r,j) => {
+    if (r.tudoOk && !st.decisoesNF[j]) st.decisoesNF[j] = { tipo:'Normal' };
+    if (!r.tudoOk && st.decisoesNF[j] && st.decisoesNF[j].tipo === 'Normal') delete st.decisoesNF[j];
+  });
+
+  const resumo = document.getElementById('resumoLote');
+  const qtdOk = resultadosNF.filter(r => r.tudoOk).length;
+  resumo.className = 'resumo ' + (qtdOk === resultadosNF.length ? 'ok' : 'div');
+  resumo.innerHTML = `<b>${resultadosNF.length} nota(s) fiscal(is) analisada(s):</b> ` +
+    `${qtdOk} sem divergência, ${resultadosNF.length - qtdOk} com divergência.` +
+    (ambiguas.length ? `<br>${ambiguas.length} foto(s) de etiqueta não puderam ser associadas automaticamente a uma NF — veja abaixo.` : '');
+
+  const boxAmb = document.getElementById('etiquetasAmbiguas');
+  if (!ambiguas.length){
+    boxAmb.classList.add('oculto'); boxAmb.innerHTML = '';
+  } else {
+    boxAmb.classList.remove('oculto');
+    boxAmb.innerHTML = '<h1 style="font-size:16px;margin:18px 0 6px">Etiquetas não identificadas</h1>' +
+      '<p class="desc">Não conseguimos identificar sozinhos de qual nota fiscal são estas etiquetas ' +
+      '(código ST não encontrado em nenhuma NF, ou encontrado em mais de uma). Indique manualmente.</p>' +
+      '<div class="thumbs">' + ambiguas.map(i => {
+        const et = st.loteAnalise.etiquetas[i];
+        const opcoes = st.loteAnalise.nfs.map((nf,j) =>
+          `<option value="${j}">NF ${escapar(nf.numero || (j+1))}</option>`).join('');
+        return `<div class="thumb">
+          <img src="data:image/jpeg;base64,${st.etiquetasPendentes[i].base64}">
+          <div class="hint" style="margin:4px 0">${escapar((et.codigosST||[]).join(', ') || 'nenhum código lido')}</div>
+          <select onchange="atribuirEtiquetaManual(${i}, this.value)">
+            <option value="">Selecione a NF...</option>
+            ${opcoes}
+            <option value="nenhuma">Não pertence a esta coleta</option>
+          </select>
+        </div>`;
+      }).join('') + '</div>';
+  }
+
+  document.getElementById('cardsNFs').innerHTML = resultadosNF.map((r,j) => {
+    const decisao = st.decisoesNF[j];
+    const nf = r.nf;
+    const checksHtml = r.checks.map(c => {
+      const cls = c.ok ? 'ok' : (c.indefinido ? 'ind' : 'nao');
+      const sim = c.ok ? '&#10003;' : (c.indefinido ? '?' : '&times;');
+      return `<div class="check"><div class="ic ${cls}">${sim}</div>
+              <div><b>${c.titulo}</b><span>${escapar(c.detalhe)}</span></div></div>`;
+    }).join('');
+    const dadosHtml = `<div class="dados">
+      <b>NF:</b> ${escapar(nf.numero||'—')} &nbsp;·&nbsp; <b>Arquivo:</b> ${escapar(nf.arquivo||'—')}<br>
+      <b>Cliente:</b> ${escapar(nf.cliente||'não identificado')}<br>
+      <b>Transportadora:</b> ${escapar(nf.transportadora||'não identificada')}<br>
+      <b>Pedido do cliente:</b> ${escapar(nf.pedido||'—')}</div>`;
+
+    let acoesHtml;
+    if (decisao && decisao.tipo === 'Reprovada'){
+      acoesHtml = `<div class="resumo div"><b>Reprovada</b> — esta nota fiscal não será liberada.</div>
+        <div class="btns"><button class="bt-sec" onclick="desfazerDecisaoNF(${j})">Desfazer</button></div>`;
+    } else if (r.tudoOk){
+      acoesHtml = `<div class="resumo ok"><b>Tudo conferido.</b> Liberação normal.</div>
+        <div class="btns"><button class="bt-perigo" onclick="reprovarNF(${j})">Reprovar esta nota</button></div>`;
+    } else if (decisao && decisao.tipo === 'Condicional'){
+      acoesHtml = `<div class="resumo div"><b>Liberação condicional registrada.</b><br>Justificativa: ${escapar(decisao.justificativa)}</div>
+        <div class="btns"><button class="bt-sec" onclick="desfazerDecisaoNF(${j})">Desfazer</button></div>`;
+    } else {
+      acoesHtml = `<div class="resumo div"><b>Divergência encontrada.</b> Escolha o que fazer com esta nota fiscal.</div>
+        <label class="campo">Justificativa da liberação condicional <span style="color:var(--erro)">*</span></label>
+        <textarea id="just-${j}" placeholder="Ex.: item sem etiqueta física, conferido manualmente com o estoque."></textarea>
+        <div class="btns">
+          <button class="bt-perigo" onclick="reprovarNF(${j})">Reprovar esta nota</button>
+          <button class="bt-prim" onclick="liberarCondicionalNF(${j})">Liberar condicionalmente</button>
+        </div>`;
+    }
+
+    return `<div class="card" style="margin-top:14px;padding:16px;border:1px solid var(--borda,#e2e2e2);border-radius:10px">
+      <div class="passo">Nota fiscal ${j+1} de ${resultadosNF.length}</div>
+      ${dadosHtml}
+      <div>${checksHtml}</div>
+      ${acoesHtml}
+    </div>`;
   }).join('');
 
-  const nf = r.nf || {};
-  document.getElementById('dadosNF').innerHTML =
-    `<b>NF:</b> ${escapar(nf.numero||'—')} &nbsp;·&nbsp; <b>Arquivo:</b> ${escapar(nf.arquivo||'—')}<br>
-     <b>Cliente:</b> ${escapar(nf.cliente||'não identificado')}<br>
-     <b>Transportadora:</b> ${escapar(nf.transportadora||'não identificada')}<br>
-     <b>Pedido do cliente:</b> ${escapar(nf.pedido||'—')}`;
-
-  const resumo = document.getElementById('resumo');
-  const btns = document.getElementById('btnsResultado');
-
-  if (r.tudoOk){
-    resumo.className = 'resumo ok';
-    resumo.innerHTML = '<b>Tudo conferido.</b> Nota fiscal e etiquetas estão batendo.';
-    document.getElementById('boxJustificativa').classList.add('oculto');
-    btns.innerHTML = `<button class="bt-sec" onclick="irPara('3')">Voltar</button>
-                      <button class="bt-prim" onclick="liberar('Normal')">Liberar material</button>`;
-  } else {
-    const problemas = r.checks.filter(c => !c.ok).map(c => c.titulo).join(', ');
-    let txt = `<b>Foram encontradas divergências:</b> ${escapar(problemas)}.`;
-    if (r.diferencaUnidades) {
-      txt += `<br>Diferença de <b>${Math.abs(r.diferencaUnidades)} unidade(s)</b> entre a NF e as etiquetas.`;
-    }
-    if (r.faltando && r.faltando.length) txt += `<br>Sem etiqueta: <b>${escapar(r.faltando.join(', '))}</b>.`;
-    if (r.sobrando && r.sobrando.length) txt += `<br>Etiqueta fora da NF: <b>${escapar(r.sobrando.join(', '))}</b>.`;
-    txt += '<br><br>Deseja liberar condicionalmente ou reprovar a liberação?';
-    resumo.className = 'resumo div';
-    resumo.innerHTML = txt;
-    document.getElementById('boxJustificativa').classList.remove('oculto');
-    btns.innerHTML = `<button class="bt-perigo" onclick="reprovar()">Reprovar liberação</button>
-                      <button class="bt-prim" onclick="liberar('Condicional')">Liberar condicionalmente</button>`;
-  }
+  atualizarBotaoContinuarLote(resultadosNF);
 }
 
-function liberar(tipo){
+function atribuirEtiquetaManual(indiceEtiqueta, valor){
+  if (valor === '') { delete st.overridesManuais[indiceEtiqueta]; }
+  else if (valor === 'nenhuma') { st.overridesManuais[indiceEtiqueta] = 'nenhuma'; }
+  else { st.overridesManuais[indiceEtiqueta] = parseInt(valor, 10); }
+  renderResultadoLote();
+}
+
+function reprovarNF(j){
+  st.decisoesNF[j] = { tipo:'Reprovada' };
+  renderResultadoLote();
+}
+
+function liberarCondicionalNF(j){
   limparErro();
-  if (tipo === 'Condicional'){
-    const j = document.getElementById('justificativa').value.trim();
-    if (j.length < 10){
-      mostrarErro('Descreva a justificativa da liberação condicional (mínimo 10 caracteres).');
-      return;
-    }
-    st.justificativa = j;
-  }
-  st.tipoLiberacao = tipo;
-  // guarda esta nota fiscal (aprovada) no lote e limpa o rascunho para a próxima
-  st.lote.push({
-    nfUpload: st.nfUpload, nfBytesB64: st.nfBytesB64, etiquetas: st.etiquetas,
-    analise: st.analise, tipoLiberacao: st.tipoLiberacao, justificativa: st.justificativa
-  });
-  limparRascunhoNF();
-  renderLoteLista();
-  exibirEtapa('4b');
-}
-
-function reprovar(){
-  limparRascunhoNF();
-  renderLoteLista();
-  exibirEtapa('4b');
-  mostrarErro('Esta nota fiscal foi reprovada e descartada — nenhum dado dela foi gravado.');
-}
-
-function limparRascunhoNF(){
-  st.nfUpload = null; st.nfBytesB64 = ''; st.etiquetas = []; st.analise = null;
-  st.tipoLiberacao = ''; st.justificativa = '';
-  const dropNFTxt = document.getElementById('dropNFTxt');
-  if (dropNFTxt) dropNFTxt.textContent = 'Toque para escolher o PDF da nota fiscal';
-  const inputNF = document.getElementById('inputNF');
-  if (inputNF) inputNF.value = '';
-  renderThumbs();
-  const just = document.getElementById('justificativa');
-  if (just) just.value = '';
-}
-
-/* ============ ETAPA 4b — LOTE DE NOTAS FISCAIS ============ */
-function renderLoteLista(){
-  const box = document.getElementById('loteLista');
-  const hint = document.getElementById('loteVazioHint');
-  if (!st.lote.length){
-    box.innerHTML = '';
-    hint.classList.remove('oculto');
-  } else {
-    hint.classList.add('oculto');
-    box.innerHTML = st.lote.map((it,i) => {
-      const tag = it.tipoLiberacao === 'Condicional'
-        ? '<span class="tag cond">Condicional</span>' : '<span class="tag ok">Normal</span>';
-      return `<div class="loteItem"><span>NF ${escapar(it.analise?.nf?.numero || '?')} — ${escapar(it.analise?.nf?.cliente || 'cliente não identificado')}</span>${tag}</div>`;
-    }).join('');
-  }
-  document.getElementById('btAdicionarNF').disabled = st.lote.length >= MAX_NFS_LOTE;
-  document.getElementById('btConcluirNotas').disabled = st.lote.length === 0;
-}
-
-function adicionarOutraNF(){
-  limparErro();
-  if (st.lote.length >= MAX_NFS_LOTE){
-    mostrarErro('Limite de ' + MAX_NFS_LOTE + ' notas fiscais por coleta.');
+  const campo = document.getElementById('just-' + j);
+  const texto = campo ? campo.value.trim() : '';
+  if (texto.length < 10){
+    mostrarErro('Descreva a justificativa da liberação condicional (mínimo 10 caracteres).');
     return;
   }
-  exibirEtapa('2');
+  st.decisoesNF[j] = { tipo:'Condicional', justificativa: texto };
+  renderResultadoLote();
 }
 
-function concluirNotas(){
+function desfazerDecisaoNF(j){
+  delete st.decisoesNF[j];
+  renderResultadoLote();
+}
+
+function atualizarBotaoContinuarLote(resultadosNF){
+  const todasDecididas = resultadosNF.every((r,j) => !!st.decisoesNF[j]);
+  const algumaAprovada = resultadosNF.some((r,j) => st.decisoesNF[j] && st.decisoesNF[j].tipo !== 'Reprovada');
+  document.getElementById('btContinuarLote').disabled = !(todasDecididas && algumaAprovada);
+}
+
+function continuarParaColeta(){
   limparErro();
-  if (!st.lote.length){ mostrarErro('Adicione ao menos uma nota fiscal aprovada.'); return; }
+  const { atribuicoes } = calcularAtribuicoes();
+  const resultadosNF = calcularResultadosNF(atribuicoes);
+  st.lote = resultadosNF
+    .map((r,j) => ({ r, j, decisao: st.decisoesNF[j] }))
+    .filter(x => x.decisao && x.decisao.tipo !== 'Reprovada')
+    .map(({ r, j, decisao }) => ({
+      nfBytesB64: st.nfsPendentes[j].base64,
+      etiquetas: r.etiquetasIndices.map(i => st.etiquetasPendentes[i]),
+      analise: { nf: r.nf, etiquetas: r.etiquetas, faltando: r.faltando, sobrando: r.sobrando,
+                 diferencaUnidades: r.diferencaUnidades, checks: r.checks, tudoOk: r.tudoOk },
+      tipoLiberacao: decisao.tipo,
+      justificativa: decisao.justificativa || ''
+    }));
+  if (!st.lote.length){ mostrarErro('Nenhuma nota fiscal foi aprovada para liberação.'); return; }
   st.loteId = 'LOTE-' + Date.now();
   irPara('5');
 }
